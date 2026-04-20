@@ -2,6 +2,17 @@
 
 This fork now supports a **single TypeScript service** deployment path.
 
+## Does it run in a Node environment now?
+Yes — for the current core app path, **yes**.
+
+The app now builds and runs as a **Node / Next.js** service without needing the Python UniVA server for:
+- chat API routes
+- streaming chat route
+- access-code status route
+- admin access-code routes
+
+The legacy Python/MCP pipeline is still not fully ported, so this is **Node-first core app runtime**, not full Python-feature parity.
+
 ## What changed
 - `apps/web` is now the primary runtime service.
 - Chat routes no longer require `AGENT_API_URL` or the Python UniVA server.
@@ -14,11 +25,17 @@ Use a single **Web Service** pointing at this repo.
 ### Runtime
 - **Node**
 
+### Health check
+- `/api/health`
+
 ### Build command
 ```bash
 npx -y bun@1.2.18 install
-cd packages/db && DATABASE_URL=$DATABASE_URL NODE_ENV=production npx -y bun@1.2.18 x drizzle-kit migrate --config=drizzle.config.ts || true
-cd ../..
+if [ -n "$DATABASE_URL" ]; then
+  cd packages/db
+  DATABASE_URL=$DATABASE_URL NODE_ENV=production npx -y bun@1.2.18 x drizzle-kit migrate --config=drizzle.config.ts
+  cd ../..
+fi
 npx -y bun@1.2.18 x turbo run build --filter=opencut
 ```
 
