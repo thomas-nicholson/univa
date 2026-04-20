@@ -1,3 +1,5 @@
+import { AiJobRecord } from "@/types/ai-editor";
+
 export interface TProject {
   id: string;
   name: string;
@@ -12,5 +14,5 @@ export interface TProject {
   bookmarks?: number[];
   description?: string;
   sourcePrompt?: string;
-  aiJobs?: string[];
+  aiJobs?: AiJobRecord[];
 }

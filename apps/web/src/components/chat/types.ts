@@ -1,3 +1,5 @@
+import { AiEditorAction, AiEditorActionResult } from '@/types/ai-editor';
+
 export interface GeneratedFile {
   path: string;
   type: 'video' | 'image' | 'audio';
@@ -20,8 +22,10 @@ export interface Message {
   timestamp: string; // Use string instead of Date object
   isStreaming?: boolean;
   generatedFiles?: GeneratedFile[]; // AI generated file information
+  aiActions?: AiEditorAction[];
+  actionResults?: AiEditorActionResult[];
   // Task execution flow related fields
-  messageType?: 'user' | 'assistant' | 'tool_start' | 'tool_end' | 'todo_progress' | 'completion';
+  messageType?: 'user' | 'assistant' | 'tool_start' | 'tool_end' | 'todo_progress' | 'completion' | 'editor_action';
   todoItems?: TodoItem[];
   overallDescription?: string;
 }

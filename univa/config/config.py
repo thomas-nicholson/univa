@@ -32,7 +32,9 @@ def get_default_config():
         "video_provider": "fal",
         "audio_provider": "hyperframes",
         "edit_provider": "hyperframes",
+        "video_understanding_provider": "gemini",
         "fal_api_key": "",
+        "gemini_api_key": "",
         
         # Model configuration for Plan Agent
         "plan_model_provider": "openai",
@@ -173,7 +175,10 @@ def load_config():
             if "VIDEO_PROVIDER" in env_vars: config["video_provider"] = env_vars["VIDEO_PROVIDER"]
             if "AUDIO_PROVIDER" in env_vars: config["audio_provider"] = env_vars["AUDIO_PROVIDER"]
             if "EDIT_PROVIDER" in env_vars: config["edit_provider"] = env_vars["EDIT_PROVIDER"]
+            if "VIDEO_UNDERSTANDING_PROVIDER" in env_vars: config["video_understanding_provider"] = env_vars["VIDEO_UNDERSTANDING_PROVIDER"]
             if "FAL_API_KEY" in env_vars: config["fal_api_key"] = env_vars["FAL_API_KEY"]
+            if "GEMINI_API_KEY" in env_vars: config["gemini_api_key"] = env_vars["GEMINI_API_KEY"]
+            if "GOOGLE_API_KEY" in env_vars and not config.get("gemini_api_key"): config["gemini_api_key"] = env_vars["GOOGLE_API_KEY"]
 
             # Helper to get default base URL based on provider
             def get_default_base_url(provider):

@@ -90,9 +90,9 @@ class StorageService {
       blurIntensity: serializedProject.blurIntensity,
       bookmarks: serializedProject.bookmarks,
       fps: serializedProject.fps,
-      description: (serializedProject as TProject).description,
-      sourcePrompt: (serializedProject as TProject).sourcePrompt,
-      aiJobs: (serializedProject as TProject).aiJobs,
+      description: serializedProject.description,
+      sourcePrompt: serializedProject.sourcePrompt,
+      aiJobs: serializedProject.aiJobs,
     };
   }
 

@@ -52,6 +52,9 @@ audio_gen:
   num_inference_steps: 25
 
 video_understanding:
+  provider: "gemini"
+  default_model: "gemini-2.0-flash"
+  detailed_analysis: true
   model_path: ""
   retriever_model_path: ""
 

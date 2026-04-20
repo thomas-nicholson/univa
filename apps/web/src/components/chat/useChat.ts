@@ -5,6 +5,8 @@ import { Message, ChatState, GeneratedFile, MediaReference, MediaSelectorState, 
 import { MediaCacheService } from './utils/mediaCacheService';
 import { parseMediaReferences, addMediaReferencesToText } from './utils/mediaReferenceParser';
 import { useProjectStore } from '@/stores/project-store';
+import { extractEditorActions } from '@/lib/ai/editor-actions';
+import { applyEditorAction } from '@/lib/ai/apply-editor-action';
 
 const CHAT_STORAGE_KEY_PREFIX = 'ai-chat-state-';
 const ACCESS_CODE_STORAGE_KEY = 'ai-chat-access-code';
@@ -90,6 +92,32 @@ export const useChat = () => {
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const executeEditorActions = useCallback(async (payload: unknown) => {
+    const envelopes = extractEditorActions(payload);
+    if (envelopes.length === 0) {
+      return;
+    }
+
+    const actionResults = await Promise.all(
+      envelopes.map((envelope) => applyEditorAction(envelope))
+    );
+
+    const actionMessage: Message = {
+      id: `editor-action-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
+      role: 'assistant',
+      content: actionResults.map((result) => `• ${result.summary}`).join('\n'),
+      timestamp: new Date().toISOString(),
+      messageType: 'editor_action',
+      aiActions: envelopes.map((envelope) => envelope.action),
+      actionResults,
+    };
+
+    setState((prev) => ({
+      ...prev,
+      messages: [...prev.messages, actionMessage],
+    }));
+  }, []);
 
   // Save state to localStorage (based on project ID)
   const saveState = (newState: ChatState, currentProjectId?: string) => {
@@ -192,7 +220,7 @@ export const useChat = () => {
           }
         }, 90000);
 
-        eventSourceRef.current.onmessage = (event) => {
+        eventSourceRef.current.onmessage = async (event) => {
           try {
             // Reset heartbeat timeout
             if (heartbeatTimeoutRef.current) {
@@ -350,6 +378,10 @@ export const useChat = () => {
                 ...prev,
                 messages: [...prev.messages, toolEndMessage],
               }));
+
+              await executeEditorActions(toolResult);
+            } else if (data.type === 'editor_action') {
+              await executeEditorActions(data);
             } else if (data.type === 'todo_progress') {
               currentTodoItems = data.items || [];
               currentOverallDescription = data.overall_description || '';

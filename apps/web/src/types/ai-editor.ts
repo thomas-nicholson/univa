@@ -13,11 +13,29 @@ export interface AiEditorAction {
   mediaPath?: string;
   mediaType?: "video" | "image" | "audio";
   text?: string;
+  title?: string;
   trackId?: string;
   elementId?: string;
   startTime?: number;
   duration?: number;
   metadata?: Record<string, unknown>;
+}
+
+export interface AiEditorActionEnvelope {
+  action: AiEditorAction;
+  summary?: string;
+  prompt?: string;
+  provider?: string;
+  model?: string;
+  outputPaths?: string[];
+}
+
+export interface AiEditorActionResult {
+  ok: boolean;
+  action: AiEditorAction;
+  summary: string;
+  importedMediaId?: string;
+  error?: string;
 }
 
 export interface AiJobRecord {
@@ -29,4 +47,5 @@ export interface AiJobRecord {
   status: "pending" | "running" | "completed" | "failed";
   outputPaths?: string[];
   actions?: AiEditorAction[];
+  actionResults?: AiEditorActionResult[];
 }

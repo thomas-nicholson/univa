@@ -128,3 +128,19 @@ def text_to_speech(text: str, model_id: str, voice: Optional[str] = None, speed:
         if voice:
             payload["voice"] = voice
     return run_model(model_id, payload)
+
+
+def video_understanding(video_path: str, prompt: str, model_id: str, detailed_analysis: bool = False) -> Dict[str, Any]:
+    payload: Dict[str, Any] = {
+        "video_url": maybe_upload_file(video_path),
+        "prompt": prompt,
+        "detailed_analysis": detailed_analysis,
+    }
+    result = run_model(model_id, payload)
+    output = result.get("output")
+    return {
+        "success": bool(output),
+        "content": output or result,
+        "message": "Video analyzed with fal.ai" if output else "Video understanding failed",
+        "raw_result": result,
+    }

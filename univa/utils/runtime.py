@@ -40,6 +40,10 @@ def get_fal_api_key() -> str:
     return os.getenv("FAL_API_KEY", config.get("fal_api_key", ""))
 
 
+def get_gemini_api_key() -> str:
+    return os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or config.get("gemini_api_key", "")
+
+
 def get_hyperframes_cmd() -> list[str]:
     raw = os.getenv("HYPERFRAMES_CMD", config.get("hyperframes_cmd", "npx -y hyperframes"))
     return raw.split()
