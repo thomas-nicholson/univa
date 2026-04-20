@@ -4,6 +4,7 @@ import { storageService } from "@/lib/storage/storage-service";
 import { toast } from "sonner";
 import { useMediaStore } from "./media-store";
 import { useTimelineStore } from "./timeline-store";
+import { useEditorStore } from "./editor-store";
 import { generateUUID } from "@/lib/utils";
 
 interface ProjectStore {
@@ -27,6 +28,7 @@ interface ProjectStore {
     type: "color" | "blur",
     options?: { backgroundColor?: string; blurIntensity?: number }
   ) => Promise<void>;
+  updateProjectCanvasSize: (canvas: { width: number; height: number }) => Promise<void>;
   updateProjectFps: (fps: number) => Promise<void>;
 
   // Bookmark methods
@@ -144,6 +146,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   },
 
   createNewProject: async (name: string) => {
+    const defaultCanvas = { width: 1920, height: 1080 };
     const newProject: TProject = {
       id: generateUUID(),
       name,
@@ -153,10 +156,13 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       backgroundColor: "#000000",
       backgroundType: "color",
       blurIntensity: 8,
+      canvasWidth: defaultCanvas.width,
+      canvasHeight: defaultCanvas.height,
       bookmarks: [],
       fps: 30,
     };
 
+    useEditorStore.getState().setCanvasSize(defaultCanvas);
     set({ activeProject: newProject });
 
     try {
@@ -189,6 +195,9 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     try {
       const project = await storageService.loadProject(id);
       if (project) {
+        const canvasWidth = project.canvasWidth || 1920;
+        const canvasHeight = project.canvasHeight || 1080;
+        useEditorStore.getState().setCanvasSize({ width: canvasWidth, height: canvasHeight });
         set({ activeProject: project });
 
         // Load project-specific data in parallel
@@ -428,6 +437,30 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     } catch (error) {
       console.error("Failed to update project FPS:", error);
       toast.error("Failed to update project FPS", {
+        description: "Please try again",
+      });
+    }
+  },
+
+  updateProjectCanvasSize: async (canvas: { width: number; height: number }) => {
+    const { activeProject } = get();
+    if (!activeProject) return;
+
+    const updatedProject = {
+      ...activeProject,
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height,
+      updatedAt: new Date(),
+    };
+
+    try {
+      useEditorStore.getState().setCanvasSize(canvas);
+      await storageService.saveProject(updatedProject);
+      set({ activeProject: updatedProject });
+      await get().loadAllProjects();
+    } catch (error) {
+      console.error("Failed to update project canvas size:", error);
+      toast.error("Failed to update aspect ratio", {
         description: "Please try again",
       });
     }
