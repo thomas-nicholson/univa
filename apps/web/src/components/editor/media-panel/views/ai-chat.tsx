@@ -34,7 +34,7 @@ export function AiChatView() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <MessageCircle className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">AI Assistant</span>
+            <span className="text-sm font-medium">AI Video Copilot</span>
           </div>
           {messages.length > 0 && (
             <Button
@@ -74,10 +74,10 @@ export function AiChatView() {
             <div className="flex flex-col items-center justify-center h-full text-center py-8">
               <MessageCircle className="h-12 w-12 text-muted-foreground/50 mb-4" />
               <h3 className="text-sm font-medium text-foreground mb-2">
-                AI Video Assistant
+                AI Video Copilot
               </h3>
               <p className="text-xs text-muted-foreground max-w-[200px] leading-relaxed">
-                Ask me anything about video editing, effects, or get help with your project.
+                Prompt UniVA to generate shots, b-roll, voiceover, captions, rough cuts, or editing help for the current project.
               </p>
             </div>
           ) : (

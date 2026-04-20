@@ -25,6 +25,10 @@ with open(config_path, 'r') as f:
     config = yaml.safe_load(f)
 
 video_editing_config = config.get('video_editing', {})
+LOCAL_OUTPUT_ROOT = os.getenv("OUTPUT_ROOT", "results")
+VACE_ROOT = os.getenv("VACE_ROOT", "")
+VACE_PYTHON = os.getenv("VACE_PYTHON", "python")
+ENABLE_LOCAL_VACE = os.getenv("ENABLE_LOCAL_VACE", "false").lower() == "true"
 
 # Configure logging
 log_dir = "logs"
@@ -90,10 +94,10 @@ def swap_object_tool(
     preprocess_cmd_str = None
 
     if not skip_preprocess:
-        pre_save_dir = f"/home/zhengyangliang/UniVideo/temp/{datetime_now}"
+        pre_save_dir = f"{LOCAL_OUTPUT_ROOT}/temp/{datetime_now}"
 
         preprocess_cmd = [
-            "/home/zhengyangliang/miniconda3/envs/vace/bin/python", "vace/vace_preproccess.py",
+            VACE_PYTHON, "vace/vace_preproccess.py",
             "--task", task,
             "--video", video,
             "--image", image,
@@ -115,7 +119,7 @@ def swap_object_tool(
                 log_file.write(f"Executing Preprocessing Command:\n{preprocess_cmd_str}\n\n")
                 result = subprocess.run(
                     preprocess_cmd,
-                    cwd="/home/zhengyangliang/VACE",
+                    cwd=VACE_ROOT or None,
                     stdout=log_file,
                     stderr=subprocess.STDOUT,
                     text=True,
@@ -146,10 +150,10 @@ def swap_object_tool(
         except Exception as e:
             return {'success': False, 'error': f"An unexpected error occurred during preprocessing: {str(e)}"}
 
-    save_dir = f"/home/zhengyangliang/UniVideo/results/{datetime_now}"
+    save_dir = f"{LOCAL_OUTPUT_ROOT}/results/{datetime_now}"
 
     inference_cmd = [
-        "/home/zhengyangliang/miniconda3/envs/vace/bin/python", "vace/vace_wan_inference.py",
+        VACE_PYTHON, "vace/vace_wan_inference.py",
         "--prompt", prompt,
         "--ckpt_dir", video_editing_config.get("model_path"),
         "--save_dir", save_dir,
@@ -180,7 +184,7 @@ def swap_object_tool(
             log_file.write(f"Executing Inference Command:\n{inference_cmd_str}\n\n")
             result = subprocess.run(
                 inference_cmd,
-                cwd="/home/zhengyangliang/VACE",
+                cwd=VACE_ROOT or None,
                 stdout=log_file,
                 stderr=subprocess.STDOUT,
                 text=True,
@@ -234,9 +238,9 @@ def depth_modify(
         datetime_now = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         preprocessed_files = {}
-        pre_save_dir = f"/home/zhengyangliang/UniVideo/temp/{datetime_now}"
+        pre_save_dir = f"{LOCAL_OUTPUT_ROOT}/temp/{datetime_now}"
         preprocess_cmd = [
-            "/home/zhengyangliang/miniconda3/envs/vace/bin/python",
+            VACE_PYTHON,
             "vace/vace_preproccess.py",
             "--task", task,
             "--video", video,
@@ -250,7 +254,7 @@ def depth_modify(
                 log_file.write("Preprocessing command: " + ' '.join(preprocess_cmd) + "\n")
                 result = subprocess.run(
                     preprocess_cmd,
-                    cwd="/home/zhengyangliang/VACE",
+                    cwd=VACE_ROOT or None,
                     stdout=log_file,
                     stderr=subprocess.STDOUT,
                     text=True
@@ -288,12 +292,12 @@ def depth_modify(
         
         # Build inference command
         inference_cmd = [
-            "/home/zhengyangliang/miniconda3/envs/vace/bin/python",
+            VACE_PYTHON,
             "vace/vace_wan_inference.py",
             "--prompt", prompt,
             "--src_video", preprocessed_files['src_video'],
             "--ckpt_dir", video_editing_config.get("model_path"),
-            "--save_dir", f"/home/zhengyangliang/UniVideo/results/{datetime_now}",
+            "--save_dir", f"{LOCAL_OUTPUT_ROOT}/results/{datetime_now}",
         ]
         
         # Execute inference
@@ -302,7 +306,7 @@ def depth_modify(
             with open(inference_log, "w") as log_file:
                 result = subprocess.run(
                     inference_cmd,
-                    cwd="/home/zhengyangliang/VACE",
+                    cwd=VACE_ROOT or None,
                     stdout=log_file,
                     stderr=subprocess.STDOUT,
                     text=True
@@ -355,9 +359,9 @@ def recolor(
     datetime_now = datetime.now().strftime("%Y%m%d_%H%M%S")
     
     preprocessed_files = {}
-    pre_save_dir = f"/home/zhengyangliang/UniVideo/temp/{datetime_now}"
+    pre_save_dir = f"{LOCAL_OUTPUT_ROOT}/temp/{datetime_now}"
     preprocess_cmd = [
-        "/home/zhengyangliang/miniconda3/envs/vace/bin/python",
+        VACE_PYTHON,
         "vace/vace_preproccess.py",
         "--task", task,
         "--video", video,
@@ -371,7 +375,7 @@ def recolor(
             log_file.write("Preprocessing command: " + ' '.join(preprocess_cmd) + "\n")
             result = subprocess.run(
                 preprocess_cmd,
-                cwd="/home/zhengyangliang/VACE",
+                cwd=VACE_ROOT or None,
                 stdout=log_file,
                 stderr=subprocess.STDOUT,
                 text=True
@@ -409,12 +413,12 @@ def recolor(
     
     # Build inference command
     inference_cmd = [
-        "/home/zhengyangliang/miniconda3/envs/vace/bin/python",
+        VACE_PYTHON,
         "vace/vace_wan_inference.py",
         "--prompt", prompt,
         "--src_video", preprocessed_files['src_video'],
         "--ckpt_dir", video_editing_config.get("model_path"),
-        "--save_dir", f"/home/zhengyangliang/UniVideo/results/{datetime_now}",
+        "--save_dir", f"{LOCAL_OUTPUT_ROOT}/results/{datetime_now}",
     ]
     
     # Execute inference
@@ -423,7 +427,7 @@ def recolor(
         with open(inference_log, "w") as log_file:
             result = subprocess.run(
                 inference_cmd,
-                cwd="/home/zhengyangliang/VACE",
+                cwd=VACE_ROOT or None,
                 stdout=log_file,
                 stderr=subprocess.STDOUT,
                 text=True
@@ -476,9 +480,9 @@ def pose_reference(
         datetime_now = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         preprocessed_files = {}
-        pre_save_dir = f"/home/zhengyangliang/UniVideo/temp/{datetime_now}"
+        pre_save_dir = f"{LOCAL_OUTPUT_ROOT}/temp/{datetime_now}"
         preprocess_cmd = [
-            "/home/zhengyangliang/miniconda3/envs/vace/bin/python",
+            VACE_PYTHON,
             "vace/vace_preproccess.py",
             "--task", task,
             "--video", video,
@@ -492,7 +496,7 @@ def pose_reference(
                 log_file.write("Preprocessing command: " + ' '.join(preprocess_cmd) + "\n")
                 result = subprocess.run(
                     preprocess_cmd,
-                    cwd="/home/zhengyangliang/VACE",
+                    cwd=VACE_ROOT or None,
                     stdout=log_file,
                     stderr=subprocess.STDOUT,
                     text=True
@@ -530,12 +534,12 @@ def pose_reference(
         
         # Build inference command
         inference_cmd = [
-            "/home/zhengyangliang/miniconda3/envs/vace/bin/python",
+            VACE_PYTHON,
             "vace/vace_wan_inference.py",
             "--prompt", prompt,
             "--src_video", preprocessed_files['src_video'],
             "--ckpt_dir", video_editing_config.get("model_path"),
-            "--save_dir", f"/home/zhengyangliang/UniVideo/results/{datetime_now}",
+            "--save_dir", f"{LOCAL_OUTPUT_ROOT}/results/{datetime_now}",
         ]
         
         # Execute inference
@@ -544,7 +548,7 @@ def pose_reference(
             with open(inference_log, "w") as log_file:
                 result = subprocess.run(
                     inference_cmd,
-                    cwd="/home/zhengyangliang/VACE",
+                    cwd=VACE_ROOT or None,
                     stdout=log_file,
                     stderr=subprocess.STDOUT,
                     text=True
@@ -602,9 +606,9 @@ def style_transfer(
         datetime_now = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         preprocessed_files = {}
-        pre_save_dir = f"/home/zhengyangliang/UniVideo/temp/{datetime_now}"
+        pre_save_dir = f"{LOCAL_OUTPUT_ROOT}/temp/{datetime_now}"
         preprocess_cmd = [
-            "/home/zhengyangliang/miniconda3/envs/vace/bin/python",
+            VACE_PYTHON,
             "vace/vace_preproccess.py",
             "--task", task,
             "--video", video,
@@ -618,7 +622,7 @@ def style_transfer(
                 log_file.write("Preprocessing command: " + ' '.join(preprocess_cmd) + "\n")
                 result = subprocess.run(
                     preprocess_cmd,
-                    cwd="/home/zhengyangliang/VACE",
+                    cwd=VACE_ROOT or None,
                     stdout=log_file,
                     stderr=subprocess.STDOUT,
                     text=True
@@ -656,12 +660,12 @@ def style_transfer(
         
         # Build inference command
         inference_cmd = [
-            "/home/zhengyangliang/miniconda3/envs/vace/bin/python",
+            VACE_PYTHON,
             "vace/vace_wan_inference.py",
             "--prompt", prompt,
             "--src_video", preprocessed_files['src_video'],
             "--ckpt_dir", video_editing_config.get("model_path"),
-            "--save_dir", f"/home/zhengyangliang/UniVideo/results/{datetime_now}",
+            "--save_dir", f"{LOCAL_OUTPUT_ROOT}/results/{datetime_now}",
         ]
         
         # Execute inference
@@ -670,7 +674,7 @@ def style_transfer(
             with open(inference_log, "w") as log_file:
                 result = subprocess.run(
                     inference_cmd,
-                    cwd="/home/zhengyangliang/VACE",
+                    cwd=VACE_ROOT or None,
                     stdout=log_file,
                     stderr=subprocess.STDOUT,
                     text=True
@@ -730,10 +734,10 @@ def repainting(
         preprocessed_files = {}
         task = "inpainting"
         # Build preprocessing command
-        pre_save_dir = f"/home/zhengyangliang/UniVideo/temp/{datetime_now}"
+        pre_save_dir = f"{LOCAL_OUTPUT_ROOT}/temp/{datetime_now}"
         # python vace/vace_preproccess.py --task inpainting --mode label --label cat --video assets/videos/test.mp4
         preprocess_cmd = [
-            "/home/zhengyangliang/miniconda3/envs/vace/bin/python",
+            VACE_PYTHON,
             "vace/vace_preproccess.py",
             "--task", task,
             "--video", video,
@@ -749,7 +753,7 @@ def repainting(
                 log_file.write("Preprocessing command: " + ' '.join(preprocess_cmd) + "\n")
                 result = subprocess.run(
                     preprocess_cmd,
-                    cwd="/home/zhengyangliang/VACE",
+                    cwd=VACE_ROOT or None,
                     stdout=log_file,
                     stderr=subprocess.STDOUT,
                     text=True
@@ -789,11 +793,11 @@ def repainting(
         
         # Build inference command
         inference_cmd = [
-            "/home/zhengyangliang/miniconda3/envs/vace/bin/python",
+            VACE_PYTHON,
             "vace/vace_wan_inference.py",
             "--prompt", prompt,
             "--ckpt_dir", video_editing_config.get("model_path"),
-            "--save_dir", f"/home/zhengyangliang/UniVideo/results/{datetime_now}",
+            "--save_dir", f"{LOCAL_OUTPUT_ROOT}/results/{datetime_now}",
         ]
 
         # Add preprocessed files
@@ -808,7 +812,7 @@ def repainting(
             with open(inference_log, "w") as log_file:
                 result = subprocess.run(
                     inference_cmd,
-                    cwd="/home/zhengyangliang/VACE",
+                    cwd=VACE_ROOT or None,
                     stdout=log_file,
                     stderr=subprocess.STDOUT,
                     text=True
@@ -918,7 +922,7 @@ def long_video_edit(
 
     # Unify save directory and log file naming with existing tools.
     datetime_now = datetime.now().strftime("%Y%m%d_%H%M%S")
-    save_dir = f"/home/zhengyangliang/UniVideo/results/{datetime_now}"
+    save_dir = f"{LOCAL_OUTPUT_ROOT}/results/{datetime_now}"
     os.makedirs(save_dir, exist_ok=True)
     inference_log = os.path.join(_log_dir, f"vace_inference_long_{datetime_now}.log")
 

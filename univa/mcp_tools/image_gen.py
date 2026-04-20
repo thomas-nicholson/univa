@@ -6,7 +6,8 @@ from mcp.server.fastmcp import FastMCP
 
 from mcp_tools.base import ToolResponse, setup_logger
 from utils.image_process import download_image
-from utils.wavespeed_api import text_to_image_generate, seedream_v4_edit, seedream_v4_sequential_edit
+from utils.wavespeed_api import text_to_image_generate as wavespeed_text_to_image_generate, seedream_v4_edit, seedream_v4_sequential_edit
+from utils.fal_api import text_to_image_generate as fal_text_to_image_generate, image_to_image_generate as fal_image_to_image_generate
 
 # Load configuration
 # config_path = "config/mcp_tools_config/config.yaml"
@@ -40,24 +41,36 @@ def text2image_generate(prompt: str)-> ToolResponse:
               - 'error' (str, optional): An error message if the generation failed.
     """
     model = image_gen_config.get("text_to_image")
+    provider = image_gen_config.get("provider", "fal")
+
+    if provider == "fal":
+        result = fal_text_to_image_generate(prompt, model)
+        return ToolResponse(
+            success=result.get("success", False),
+            output_path=result.get("output_path"),
+            message=result.get("message", "Image generated successfully."),
+            content=result.get("content"),
+        )
 
     if model == "flux-kontext":
         api_key = image_gen_config.get("wavespeed_api")
-        image_url = text_to_image_generate(api_key, prompt)
+        image_url = wavespeed_text_to_image_generate(api_key, prompt)
         _time = datetime.now().strftime("%m%d%H%M%S")
         base_output_path = image_gen_config.get("base_output_path", "results/image")
         os.makedirs(base_output_path, exist_ok=True)
         image_save_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), f"{base_output_path}/{_time}_{prompt[:30].replace(' ', '_')}.jpg")
 
-    logger.info(f"Image URL: {image_url}")
-    download_image(image_url, save_path=image_save_path)
-    logger.info(f"Image saved to: {image_save_path}")
+        logger.info(f"Image URL: {image_url}")
+        download_image(image_url, save_path=image_save_path)
+        logger.info(f"Image saved to: {image_save_path}")
 
-    return ToolResponse(
-        success=True,
-        output_path=image_save_path,
-        message="Image generated successfully."
-    )
+        return ToolResponse(
+            success=True,
+            output_path=image_save_path,
+            message="Image generated successfully."
+        )
+
+    return ToolResponse(success=False, message="Unsupported image generation provider or model")
 
 
 
@@ -81,7 +94,17 @@ def image2image_generate(prompt: str, image_path: str|list[str]):
     """
 
     model = image_gen_config.get("image_to_image")
+    provider = image_gen_config.get("provider", "fal")
     
+    if provider == "fal":
+        result = fal_image_to_image_generate(prompt, image_path, model)
+        return ToolResponse(
+            success=result.get("success", False),
+            output_path=result.get("output_path"),
+            message=result.get("message", "Image generated successfully."),
+            content=result.get("content"),
+        )
+
     if model == "flux-kontext":
         api_key = image_gen_config.get("wavespeed_api")
         res = seedream_v4_edit(api_key, prompt, image_path)
@@ -91,15 +114,17 @@ def image2image_generate(prompt: str, image_path: str|list[str]):
         os.makedirs(base_output_path, exist_ok=True)
         image_save_path = f"{base_output_path}/{_time}_{prompt[:30].replace(' ', '_')}.jpg"
 
-    logger.info(f"Image URL: {image_url}")
-    download_image(image_url, save_path=image_save_path)
-    logger.info(f"Image saved to: {image_save_path}")
+        logger.info(f"Image URL: {image_url}")
+        download_image(image_url, save_path=image_save_path)
+        logger.info(f"Image saved to: {image_save_path}")
 
-    return ToolResponse(
-        success=True,
-        output_path=image_save_path,
-        message="Image generated successfully."
-    )
+        return ToolResponse(
+            success=True,
+            output_path=image_save_path,
+            message="Image generated successfully."
+        )
+
+    return ToolResponse(success=False, message="Unsupported image-to-image provider or model")
 
 
 @mcp.tool()

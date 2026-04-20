@@ -9,7 +9,9 @@ from mcp_tools.base import ToolResponse, setup_logger
 from utils.video_process import merge_videos, storyboard_generate, save_last_frame_decord
 from utils.query_llm import refine_gen_prompt, audio_prompt_gen
 from utils.image_process import download_image
-from utils.wavespeed_api import text_to_video_generate, image_to_video_generate, frame_to_frame_video, text_to_image_generate, image_to_image_generate, audio_gen, hailuo_i2v_pro
+from utils.wavespeed_api import text_to_video_generate as wavespeed_text_to_video_generate, image_to_video_generate as wavespeed_image_to_video_generate, frame_to_frame_video, text_to_image_generate, image_to_image_generate, audio_gen, hailuo_i2v_pro
+from utils.fal_api import text_to_video_generate as fal_text_to_video_generate, image_to_video_generate as fal_image_to_video_generate
+from utils.hyperframes_cli import render_project as hyperframes_render_project
 
 # Load configuration
 os.chdir(os.path.dirname(os.path.dirname(__file__)))
@@ -46,16 +48,23 @@ async def text2video_gen(prompt: str) -> str:
               - 'error' (str, optional): An error message if the generation failed.
     """
     model = video_gen_config.get("text_to_video")
+    provider = video_gen_config.get("provider", "fal")
     
+    if provider == "fal":
+        result = fal_text_to_video_generate(prompt, model)
+        return result
+
     if model == "seedance":
         api_key = video_gen_config.get("wavespeed_api")
         save_dir = f"results/{datetime.now().strftime('%Y%m%d%H%M%S')}_{prompt[:30].replace(' ', '_')}"
         os.makedirs(save_dir, exist_ok=True)
         _time = datetime.now().strftime("%m%d%H%M%S")
         save_path = f"{save_dir}/{_time}.mp4"
-        return_dict = text_to_video_generate(api_key, prompt, save_path=save_path)
+        return_dict = wavespeed_text_to_video_generate(api_key, prompt, save_path=save_path)
         
         return return_dict
+
+    return ToolResponse(success=False, message="Unsupported video generation provider or model")
 
 
 @mcp.tool()
@@ -85,8 +94,7 @@ async def storyvideo_gen(prompt: str) -> ToolResponse:
 
     model = video_gen_config.get("text_to_video")
     if model == "seedance":
-        if save_dir is None:
-            save_dir = f"infer/v2v/{datetime.now().strftime('%Y%m%d%H%M%S')}_{prompt[:30].replace(' ', '_')}"
+        save_dir = f"infer/v2v/{datetime.now().strftime('%Y%m%d%H%M%S')}_{prompt[:30].replace(' ', '_')}"
         os.makedirs(save_dir, exist_ok=True)
 
         # 1.generate a storyboard first
@@ -327,16 +335,22 @@ async def image2video_gen(prompt: str, image_path: str) -> str:
               - 'error' (str, optional): An error message if the generation failed.
     """
     model = video_gen_config.get("image_to_video")
+    provider = video_gen_config.get("provider", "fal")
     
+    if provider == "fal":
+        return fal_image_to_video_generate(prompt, image_path, model)
+
     if model == "seedance":
         api_key = video_gen_config.get("wavespeed_api")
         save_dir = f"results/{datetime.now().strftime('%Y%m%d%H%M%S')}_{prompt[:30].replace(' ', '_')}"
         os.makedirs(save_dir, exist_ok=True)
         _time = datetime.now().strftime("%m%d%H%M%S")
         save_path = f"{save_dir}/{_time}.mp4"
-        return_dict = image_to_video_generate(api_key, prompt, image_path, save_path=save_path)
+        return_dict = wavespeed_image_to_video_generate(api_key, prompt, image_path, save_path=save_path)
         
         return return_dict
+
+    return ToolResponse(success=False, message="Unsupported image-to-video provider or model")
 
 
 @mcp.tool()
@@ -423,6 +437,16 @@ async def merge2videos(video_paths: list[str]):
               - 'output_path' (str): The path to the merged video.
               - 'message' (str): A success message.
     """
+    provider = video_gen_config.get("provider", "fal")
+    if provider == "hyperframes":
+        result = hyperframes_render_project(os.getcwd())
+        return ToolResponse(
+            success=result["success"],
+            output_path=result.get("output_path"),
+            message="Videos composed with HyperFrames" if result["success"] else "HyperFrames composition failed",
+            content={"stdout": result["stdout"], "stderr": result["stderr"]},
+        )
+
     save_dir = f"results/{datetime.now().strftime('%Y%m%d%H%M%S')}"
     os.makedirs(save_dir, exist_ok=True)
     _time = datetime.now().strftime("%m%d%H%M%S")

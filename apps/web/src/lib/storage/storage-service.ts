@@ -65,7 +65,10 @@ class StorageService {
       blurIntensity: project.blurIntensity,
       bookmarks: project.bookmarks,
       fps: project.fps,
-    };
+      description: project.description,
+      sourcePrompt: project.sourcePrompt,
+      aiJobs: project.aiJobs,
+    } as SerializedProject;
 
     await this.projectsAdapter.set(project.id, serializedProject);
   }
@@ -87,6 +90,9 @@ class StorageService {
       blurIntensity: serializedProject.blurIntensity,
       bookmarks: serializedProject.bookmarks,
       fps: serializedProject.fps,
+      description: (serializedProject as TProject).description,
+      sourcePrompt: (serializedProject as TProject).sourcePrompt,
+      aiJobs: (serializedProject as TProject).aiJobs,
     };
   }
 

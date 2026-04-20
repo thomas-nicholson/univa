@@ -10,4 +10,7 @@ export interface TProject {
   blurIntensity?: number; // in pixels (4, 8, 18)
   fps?: number;
   bookmarks?: number[];
+  description?: string;
+  sourcePrompt?: string;
+  aiJobs?: string[];
 }

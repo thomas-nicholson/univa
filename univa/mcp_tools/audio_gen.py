@@ -6,8 +6,10 @@ from datetime import datetime
 from mcp.server.fastmcp import FastMCP
 
 from mcp_tools.base import ToolResponse, setup_logger
-from utils.wavespeed_api import audio_gen, speech_gen
+from utils.wavespeed_api import audio_gen as wavespeed_audio_gen, speech_gen as wavespeed_speech_gen
 from utils.query_llm import audio_prompt_gen, speech_prompt_gen
+from utils.fal_api import text_to_speech as fal_text_to_speech, speech_to_text as fal_speech_to_text
+from utils.hyperframes_cli import synthesize_speech as hyperframes_synthesize_speech, transcribe_media as hyperframes_transcribe_media
 
 # Load configuration
 # config_path = "config/mcp_tools_config/config.yaml"
@@ -60,7 +62,8 @@ async def generate_audio_for_video(video_path: str) -> ToolResponse:
                 error=f"Input video file does not exist: {video_path}"
             )
         
-        # Get default values from config
+        # Get provider + defaults from config
+        provider = audio_gen_config.get("provider", "hyperframes")
         default_model = audio_gen_config.get("default_model", "mmaudio-v2")
         default_duration = audio_gen_config.get("duration", 5)
         default_guidance_scale = audio_gen_config.get("guidance_scale", 4.5)
@@ -80,21 +83,27 @@ async def generate_audio_for_video(video_path: str) -> ToolResponse:
             logger.warning(f"Failed to generate dynamic prompt, using fallback: {e}")
             prompt = "Generate appropriate background audio and sound effects for this video content"
         
-        # Generate audio using wavespeed API
+        # Generate audio using configured provider
         logger.info(f"Generating audio for video: {video_path}")
-        result = audio_gen(
-            api_key=api_key,
-            prompt=prompt,
-            video_url=video_path,
-            model=default_model,
-            save_path=save_path,
-            provider="wavespeed-ai",
-            duration=default_duration,
-            guidance_scale=default_guidance_scale,
-            mask_away_clip=False,
-            negative_prompt="",
-            num_inference_steps=default_num_inference_steps
-        )
+        if provider == "hyperframes":
+            result = {
+                "success": False,
+                "error": "HyperFrames is configured for composition/TTS, not automatic background audio generation yet.",
+            }
+        else:
+            result = wavespeed_audio_gen(
+                api_key=api_key,
+                prompt=prompt,
+                video_url=video_path,
+                model=default_model,
+                save_path=save_path,
+                provider="wavespeed-ai",
+                duration=default_duration,
+                guidance_scale=default_guidance_scale,
+                mask_away_clip=False,
+                negative_prompt="",
+                num_inference_steps=default_num_inference_steps
+            )
         
         if result and result.get('success'):
             logger.info(f"Audio generation successful: {result.get('output_path')}")
@@ -187,10 +196,11 @@ async def generate_speech(text: str = None, video_path: str = None) -> ToolRespo
                 error="Failed to generate valid text content for speech"
             )
         
-        # Get default values from config
-        default_voice = audio_gen_config.get("default_voice", "Wise_Woman")
+        # Get provider + defaults from config
+        provider = audio_gen_config.get("provider", "hyperframes")
+        default_voice = audio_gen_config.get("default_voice", "eve")
         default_emotion = audio_gen_config.get("default_emotion", "neutral")
-        speech_model = audio_gen_config.get("speech_model", "speech-2.5-turbo-preview")
+        speech_model = audio_gen_config.get("speech_model", "xai/tts/v1")
         
         # Auto-generate save path
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -198,21 +208,26 @@ async def generate_speech(text: str = None, video_path: str = None) -> ToolRespo
         os.makedirs(base_output_path, exist_ok=True)
         save_path = f"{base_output_path}/speech_{timestamp}.wav"
         
-        # Generate speech using wavespeed API
+        # Generate speech using configured provider
         logger.info(f"Generating speech for text: {text[:50]}...")
-        result = speech_gen(
-            api_key=api_key,
-            prompt=text,
-            voice_id=default_voice,
-            emotion=default_emotion,
-            english_normalization=False,
-            pitch=0,
-            speed=1.0,
-            volume=1.0,
-            save_path=save_path,
-            provider="minimax",
-            model=speech_model
-        )
+        if provider == "fal":
+            result = fal_text_to_speech(text, speech_model, voice=default_voice)
+        elif provider == "hyperframes":
+            result = hyperframes_synthesize_speech(text, output_path=save_path, voice=default_voice)
+        else:
+            result = wavespeed_speech_gen(
+                api_key=api_key,
+                prompt=text,
+                voice_id=default_voice,
+                emotion=default_emotion,
+                english_normalization=False,
+                pitch=0,
+                speed=1.0,
+                volume=1.0,
+                save_path=save_path,
+                provider="minimax",
+                model=speech_model
+            )
         
         if result and result.get('success'):
             logger.info(f"Speech generation successful: {result.get('output_path')}")

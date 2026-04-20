@@ -1,42 +1,63 @@
 # Configuration for mcp_tools
+providers:
+  fal:
+    enabled: true
+    text_to_image_model: "fal-ai/flux/schnell"
+    image_to_image_model: "fal-ai/flux/dev"
+    text_to_video_model: "fal-ai/kling-video/v1/standard/text-to-video"
+    image_to_video_model: "fal-ai/kling-video/v1/standard/image-to-video"
+    speech_to_text_model: "fal-ai/elevenlabs/speech-to-text"
+    text_to_speech_model: "xai/tts/v1"
+  wavespeed:
+    enabled: true
+  hyperframes:
+    enabled: true
+
 image_gen:
-  text_to_image: "flux-kontext"
-  image_to_image: "flux-kontext"
+  provider: "fal"
+  text_to_image: "fal-ai/flux/schnell"
+  image_to_image: "fal-ai/flux/dev"
   wavespeed_api: ""
+  base_output_path: "results/image"
 
 video_editing:
-  model_path: "/mnt/data/zhengyangliang/Wan2.1-VACE-1.3B"
-  style_transfer: "runway"
-  pose_reference: "vace_api"
-  repainting: "runway"
-  wavespeed_api: ""
-
-video_gen:
-  text_to_video: "seedance"
-  image_to_video: "seedance"
-  frame_to_frame_video: "wan_api"
+  provider: "hyperframes"
+  model_path: ""
+  style_transfer: "hyperframes"
+  pose_reference: "hyperframes"
+  repainting: "hyperframes"
   wavespeed_api: ""
   base_output_path: "results/video"
-  if_audio: True
+
+video_gen:
+  provider: "fal"
+  text_to_video: "fal-ai/kling-video/v1/standard/text-to-video"
+  image_to_video: "fal-ai/kling-video/v1/standard/image-to-video"
+  frame_to_frame_video: "fal-ai/kling-video/v1/standard/image-to-video"
+  wavespeed_api: ""
+  base_output_path: "results/video"
+  if_audio: true
 
 audio_gen:
+  provider: "hyperframes"
+  transcription_provider: "fal"
   wavespeed_api: ""
   default_model: "mmaudio-v2"
-  speech_model: "speech-2.5-turbo-preview"
-  default_voice: "Wise_Woman"
-  default_emotion: "surprised"
+  speech_model: "xai/tts/v1"
+  default_voice: "eve"
+  default_emotion: "neutral"
   base_output_path: "results/audio"
   duration: 5
   guidance_scale: 4.5
   num_inference_steps: 25
 
 video_understanding:
-  model_path: "/share/project/liangzy/liangzy2/models_cache/Qwen2.5-VL-32B-Instruct"
-  retriever_model_path: "/share/project/liangzy/liangzy2/models_cache/BGE-VL-large"
+  model_path: ""
+  retriever_model_path: ""
 
 video_tracking:
-  sa2va_model_path: "/mnt/data/zhengyangliang/Sa2VA-4B"
-  sam_model_path: "/mnt/data/zhengyangliang/sam2.1_t.pt"
+  sa2va_model_path: ""
+  sam_model_path: ""
 
 llm:
   model: "gpt-5-2025-08-07"

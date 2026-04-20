@@ -2,5 +2,6 @@ agno
 openai
 anthropic
 sqlalchemy
+fal-client
 
 

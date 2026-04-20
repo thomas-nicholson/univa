@@ -22,7 +22,17 @@ def get_default_config():
         # Agent configuration paths
         "mcp_servers_config": os.path.join(project_root, "univa/config/mcp_configs.json"),
         "prompt_dir": os.path.join(project_root, "univa/prompts"),
-        "mcp_tools_path": os.path.join(project_root, "univa"),  # Default UniVideo path
+        "mcp_tools_path": os.path.join(project_root, "univa"),
+        "output_root": os.path.join(project_root, "results"),
+        "hyperframes_cmd": "npx -y hyperframes",
+        
+        # Media provider configuration
+        "media_default_provider": "fal",
+        "image_provider": "fal",
+        "video_provider": "fal",
+        "audio_provider": "hyperframes",
+        "edit_provider": "hyperframes",
+        "fal_api_key": "",
         
         # Model configuration for Plan Agent
         "plan_model_provider": "openai",
@@ -154,6 +164,16 @@ def load_config():
             # Proxy
             if "PROXY_HOST" in env_vars: config["proxy_host"] = env_vars["PROXY_HOST"]
             if "PROXY_PORT" in env_vars: config["proxy_port"] = env_vars["PROXY_PORT"]
+
+            # Media runtime
+            if "OUTPUT_ROOT" in env_vars: config["output_root"] = env_vars["OUTPUT_ROOT"]
+            if "HYPERFRAMES_CMD" in env_vars: config["hyperframes_cmd"] = env_vars["HYPERFRAMES_CMD"]
+            if "MEDIA_DEFAULT_PROVIDER" in env_vars: config["media_default_provider"] = env_vars["MEDIA_DEFAULT_PROVIDER"]
+            if "IMAGE_PROVIDER" in env_vars: config["image_provider"] = env_vars["IMAGE_PROVIDER"]
+            if "VIDEO_PROVIDER" in env_vars: config["video_provider"] = env_vars["VIDEO_PROVIDER"]
+            if "AUDIO_PROVIDER" in env_vars: config["audio_provider"] = env_vars["AUDIO_PROVIDER"]
+            if "EDIT_PROVIDER" in env_vars: config["edit_provider"] = env_vars["EDIT_PROVIDER"]
+            if "FAL_API_KEY" in env_vars: config["fal_api_key"] = env_vars["FAL_API_KEY"]
 
             # Helper to get default base URL based on provider
             def get_default_base_url(provider):
