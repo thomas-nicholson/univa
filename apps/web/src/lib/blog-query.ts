@@ -32,7 +32,22 @@ async function fetchFromMarble<T>(endpoint: string): Promise<T> {
 }
 
 export async function getPosts() {
-  return fetchFromMarble<MarblePostList>("posts");
+  try {
+    return await fetchFromMarble<MarblePostList>("posts");
+  } catch (error) {
+    console.warn("Falling back to an empty post list because Marble CMS is unavailable.");
+    return {
+      posts: [],
+      pagination: {
+        limit: 0,
+        currpage: 1,
+        nextPage: null,
+        prevPage: null,
+        totalItems: 0,
+        totalPages: 0,
+      },
+    } satisfies MarblePostList;
+  }
 }
 
 export async function getTags() {

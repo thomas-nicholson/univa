@@ -749,7 +749,6 @@ export function Timeline() {
             <ScrollArea
               className="w-full h-full"
               ref={tracksScrollRef}
-              type="scroll"
               showHorizontalScrollbar
             >
               <div
