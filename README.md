@@ -31,6 +31,17 @@
 
 **UniVA** (Universal Video Agent) is an open-source, next-generation video generalist system that enables you to **plan, compose, and produce** videos through natural language instructions. UniVA acts as your intelligent video director, iterating shots and stories with you through an agentic, proactive workflow.
 
+## 🔀 Fork-specific MVP work
+
+This fork is currently being adapted into an **AI-assisted video editor** focused on practical creator workflows.
+
+If you are working on this fork rather than upstream UniVA, read these first:
+- `docs/fork-current-state.md` — current implementation state of this fork
+- `docs/future-agent-handoff.md` — continuation guidance for future agents
+- `docs/product-strategy.md` — fork product direction
+- `docs/technical-roadmap.md` — technical roadmap for the MVP transition
+- `docs/univa-mvp-implementation-plan.md` — implementation plan snapshot
+
 ### ✨ Key Features
 
 #### 🎬 Agentic Creation
