@@ -1,55 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
-const AGENT_API_URL = process.env.AGENT_API_URL || 'http://0.0.0.0:8000';
+import { AccessCodeHttpError, exportAccessCodes, requireAdminAccess } from "@/lib/server/access-codes";
 
-/**
- * GET /api/admin/access-codes/export/json - Export access codes as JSON (admin only)
- */
+export const runtime = "nodejs";
+
 export async function GET(req: NextRequest) {
   try {
-    const adminCode = req.headers.get('X-Access-Code');
-
-    if (!adminCode) {
-      return NextResponse.json(
-        { error: 'Admin access code is required' },
-        { status: 401 }
-      );
-    }
-
-    const targetUrl = `${AGENT_API_URL}/admin/access-codes/export/json`;
-    
-    const response = await fetch(targetUrl, {
-      method: 'GET',
+    await requireAdminAccess(req.headers.get("X-Access-Code"));
+    const payload = await exportAccessCodes();
+    return NextResponse.json(payload, {
       headers: {
-        'X-Access-Code': adminCode,
+        "Content-Disposition": `attachment; filename=access_codes_${new Date().toISOString().replace(/[:.]/g, "-")}.json`,
       },
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Agent API error:', errorText);
-      return NextResponse.json(
-        { error: `Agent API error: ${errorText}` },
-        { status: response.status }
-      );
+  } catch (error) {
+    if (error instanceof AccessCodeHttpError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
     }
 
-    // Get the JSON data and headers from the backend
-    const data = await response.json();
-    const contentDisposition = response.headers.get('Content-Disposition');
-    
-    // Return with the same Content-Disposition header for download
-    return NextResponse.json(data, {
-      headers: contentDisposition 
-        ? { 'Content-Disposition': contentDisposition }
-        : {}
-    });
-    
-  } catch (error) {
-    console.error('Export access codes API error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    console.error("Export access code API error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

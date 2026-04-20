@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: univa-web
+    runtime: node
+    plan: starter
+    rootDir: .
+    buildCommand: |
+      npx -y bun@1.2.18 install
+      cd packages/db && DATABASE_URL=$DATABASE_URL NODE_ENV=production npx -y bun@1.2.18 x drizzle-kit migrate --config=drizzle.config.ts || true
+      cd ../..
+      npx -y bun@1.2.18 x turbo run build --filter=opencut
+    startCommand: cd apps/web && PORT=${PORT:-3000} npx next start -p $PORT
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: AUTH_ENABLED
+        value: false
+      - key: UNIVA_AGENT_MODEL
+        value: gpt-4.1-mini

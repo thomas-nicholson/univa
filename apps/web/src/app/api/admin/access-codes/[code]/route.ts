@@ -1,147 +1,71 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
-const AGENT_API_URL = process.env.AGENT_API_URL || 'http://0.0.0.0:8000';
+import {
+  AccessCodeHttpError,
+  deleteAccessCode,
+  getAccessCode,
+  requireAdminAccess,
+  updateAccessCode,
+} from "@/lib/server/access-codes";
 
-/**
- * GET /api/admin/access-codes/[code] - Get access code details (admin only)
- */
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { code: string } }
-) {
+export const runtime = "nodejs";
+
+type RouteContext = {
+  params: Promise<{ code: string }>;
+};
+
+export async function GET(req: NextRequest, context: RouteContext) {
   try {
-    const adminCode = req.headers.get('X-Access-Code');
-
-    if (!adminCode) {
-      return NextResponse.json(
-        { error: 'Admin access code is required' },
-        { status: 401 }
-      );
+    await requireAdminAccess(req.headers.get("X-Access-Code"));
+    const { code: accessCode } = await context.params;
+    const code = await getAccessCode(accessCode);
+    if (!code) {
+      return NextResponse.json({ error: "Access code not found" }, { status: 404 });
     }
-
-    const targetUrl = `${AGENT_API_URL}/admin/access-codes/${params.code}`;
-    
-    const response = await fetch(targetUrl, {
-      method: 'GET',
-      headers: {
-        'X-Access-Code': adminCode,
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Agent API error:', errorText);
-      return NextResponse.json(
-        { error: `Agent API error: ${errorText}` },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
-    
+    return NextResponse.json(code);
   } catch (error) {
-    console.error('Get access code API error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    if (error instanceof AccessCodeHttpError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
+
+    console.error("Get access code API error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
-/**
- * PUT /api/admin/access-codes/[code] - Update access code (admin only)
- */
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { code: string } }
-) {
+export async function PUT(req: NextRequest, context: RouteContext) {
   try {
-    const adminCode = req.headers.get('X-Access-Code');
-
-    if (!adminCode) {
-      return NextResponse.json(
-        { error: 'Admin access code is required' },
-        { status: 401 }
-      );
-    }
-
+    await requireAdminAccess(req.headers.get("X-Access-Code"));
+    const { code: accessCode } = await context.params;
     const body = await req.json();
-    const targetUrl = `${AGENT_API_URL}/admin/access-codes/${params.code}`;
-    
-    const response = await fetch(targetUrl, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Access-Code': adminCode,
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Agent API error:', errorText);
-      return NextResponse.json(
-        { error: `Agent API error: ${errorText}` },
-        { status: response.status }
-      );
+    return NextResponse.json(
+      await updateAccessCode(accessCode, {
+        description: body.description,
+        enabled: body.enabled,
+        max_conversations: body.max_conversations,
+      }),
+    );
+  } catch (error) {
+    if (error instanceof AccessCodeHttpError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
     }
 
-    const data = await response.json();
-    return NextResponse.json(data);
-    
-  } catch (error) {
-    console.error('Update access code API error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    console.error("Update access code API error:", error);
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal server error" }, { status: 500 });
   }
 }
 
-/**
- * DELETE /api/admin/access-codes/[code] - Delete access code (admin only)
- */
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { code: string } }
-) {
+export async function DELETE(req: NextRequest, context: RouteContext) {
   try {
-    const adminCode = req.headers.get('X-Access-Code');
-
-    if (!adminCode) {
-      return NextResponse.json(
-        { error: 'Admin access code is required' },
-        { status: 401 }
-      );
-    }
-
-    const targetUrl = `${AGENT_API_URL}/admin/access-codes/${params.code}`;
-    
-    const response = await fetch(targetUrl, {
-      method: 'DELETE',
-      headers: {
-        'X-Access-Code': adminCode,
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Agent API error:', errorText);
-      return NextResponse.json(
-        { error: `Agent API error: ${errorText}` },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
-    
+    await requireAdminAccess(req.headers.get("X-Access-Code"));
+    const { code: accessCode } = await context.params;
+    return NextResponse.json(await deleteAccessCode(accessCode));
   } catch (error) {
-    console.error('Delete access code API error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    if (error instanceof AccessCodeHttpError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
+
+    console.error("Delete access code API error:", error);
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal server error" }, { status: 500 });
   }
 }

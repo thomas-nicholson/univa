@@ -1,20 +1,15 @@
 import { vercel } from "@t3-oss/env-core/presets-zod";
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
-import { keys as auth } from "@opencut/auth/keys";
-import { keys as db } from "@opencut/db/keys";
 
 export const env = createEnv({
-  extends: [vercel(), auth(), db()],
+  extends: [vercel()],
   server: {
     ANALYZE: z.string().optional(),
-    // Added by Vercel
     NEXT_RUNTIME: z.enum(["nodejs", "edge"]).optional(),
-    NODE_ENV: z
-      .enum(["development", "production", "test"])
-      .default("development"),
-    UPSTASH_REDIS_REST_URL: z.string().url(),
-    UPSTASH_REDIS_REST_TOKEN: z.string(),
+    NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+    UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+    UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
   },
   client: {},
   runtimeEnv: {

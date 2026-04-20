@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
@@ -56,4 +56,18 @@ export const verifications = pgTable("verifications", {
   updatedAt: timestamp("updated_at").$defaultFn(
     () => /* @__PURE__ */ new Date()
   ),
+}).enableRLS();
+
+export const accessCodes = pgTable("access_codes", {
+  accessCode: text("access_code").primaryKey(),
+  userId: text("user_id").notNull(),
+  description: text("description").default("").notNull(),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => /* @__PURE__ */ new Date())
+    .notNull(),
+  enabled: boolean("enabled").default(true).notNull(),
+  lastUsed: timestamp("last_used"),
+  usageCount: integer("usage_count").default(0).notNull(),
+  maxConversations: integer("max_conversations"),
+  conversationCount: integer("conversation_count").default(0).notNull(),
 }).enableRLS();
