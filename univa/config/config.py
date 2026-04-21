@@ -12,7 +12,7 @@ def get_default_config():
     return {
         # Auth configuration
         "auth_config_file": os.path.join(project_root, "univa/config/auth_config.json"),
-        "auth_enabled": True,
+        "auth_enabled": False,
         "admin_access_code": "",  # Will be generated on first init
         
         # Session configuration
@@ -238,4 +238,3 @@ CONFIG_FILE, config = load_config()
 # Initialize auth service
 from auth.auth_service import AuthService
 auth_service = AuthService(config['auth_config_file'])
-

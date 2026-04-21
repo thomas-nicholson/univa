@@ -154,29 +154,12 @@ async def chat(request: ChatRequest, req: Request):
     """
     Unified chat request handling endpoint - using PlanActSystem (streaming)
 
-    Access code is passed via X-Access-Code header (handled by auth middleware)
     Returns a streaming response compatible with Vercel AI SDK
     """
     try:
-        # get user_id and access_code from request state (injected by auth middleware)
+        # get user_id from request state (injected by auth middleware when enabled)
         user_id = getattr(req.state, 'user_id', 'anonymous')
-        access_code = getattr(req.state, 'access_code', None)
-        
-        # check conversation limit
-        if access_code and config.get('auth_enabled', True):
-            if not auth_service.check_conversation_limit(access_code):
-                code_info = auth_service.get_access_code_info(access_code)
-                if code_info:
-                    raise HTTPException(
-                        status_code=429,
-                        detail=f"Conversation limit reached ({code_info['conversation_count']}/{code_info['max_conversations']}). Please contact administrator."
-                    )
-                else:
-                    raise HTTPException(status_code=429, detail="Conversation limit reached")
-            
-            # increment conversation count
-            auth_service.increment_conversation_count(access_code)
-        
+
         # generate session_id if not provided
         session_id = request.session_id or str(uuid.uuid4())
         
@@ -203,39 +186,15 @@ async def chat(request: ChatRequest, req: Request):
 async def chat_get(
     prompt: str,
     session_id: Optional[str] = None,
-    accessCode: Optional[str] = None,
     request: Request = None
 ):
     """
     Get method chat endpoint for streaming responses.
-    Note: Access code is passed via URL parameter due to EventSource limitations.
     Returns a streaming response compatible with Vercel AI SDK.
     """
     try:
-        # If accessCode is provided, validate it
-        if accessCode and config.get('auth_enabled', True):
-            user_id = auth_service.validate_access_code(accessCode)
-            if not user_id:
-                raise HTTPException(status_code=401, detail="Invalid access code")
-            
-            # Check conversation limit
-            if not auth_service.check_conversation_limit(accessCode):
-                code_info = auth_service.get_access_code_info(accessCode)
-                if code_info:
-                    raise HTTPException(
-                        status_code=429,
-                        detail=f"Conversation limit reached ({code_info['conversation_count']}/{code_info['max_conversations']}). Please contact administrator."
-                    )
-                else:
-                    raise HTTPException(status_code=429, detail="Conversation limit reached")
-            
-            auth_service.increment_conversation_count(accessCode)
-            
-            # Inject user_id into request state for consistency
-            request.state.user_id = user_id
-        else:
-            # get user_id from request state (injected by auth middleware)
-            user_id = getattr(request.state, 'user_id', 'anonymous')
+        # get user_id from request state (injected by auth middleware when enabled)
+        user_id = getattr(request.state, 'user_id', 'anonymous')
         
         sid = session_id or str(uuid.uuid4())
         

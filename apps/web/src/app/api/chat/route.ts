@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { runTypeScriptAgent } from "@/lib/server/typescript-agent";
-import { AccessCodeHttpError, consumeConversation } from "@/lib/server/access-codes";
 
 export const runtime = "nodejs";
 
@@ -10,13 +9,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const prompt = body?.prompt;
     const sessionId = body?.sessionId;
-    const accessCode = req.headers.get("X-Access-Code");
 
     if (!prompt || typeof prompt !== "string") {
       return NextResponse.json({ error: "Prompt is required and must be a string" }, { status: 400 });
     }
 
-    await consumeConversation(accessCode);
     const result = await runTypeScriptAgent(prompt, sessionId);
 
     return NextResponse.json({
@@ -28,10 +25,6 @@ export async function POST(req: NextRequest) {
       model: result.model,
     });
   } catch (error) {
-    if (error instanceof AccessCodeHttpError) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode });
-    }
-
     console.error("Chat API error:", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Internal server error" }, { status: 500 });
   }

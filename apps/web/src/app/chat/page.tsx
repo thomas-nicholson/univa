@@ -1,6 +1,5 @@
 import React from 'react';
 import { ChatContainer } from '@/components/chat';
-import { ChatSettings } from '@/components/chat-settings';
 
 export default function ChatPage() {
   return (
@@ -11,10 +10,9 @@ export default function ChatPage() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">AI Chat</h1>
               <p className="mt-1 text-sm text-gray-500">
-                Chat with our AI assistant powered by univa
+                Chat with the local AI assistant powered by UniVA
               </p>
             </div>
-            <ChatSettings />
           </div>
         </div>
       </header>

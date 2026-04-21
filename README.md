@@ -163,8 +163,10 @@ VIDEO_UNDERSTAND_MODEL_PATH=/abs/path/to/Qwen2.5-VL-32B-Instruct
 
 **D. System Settings**
 ```bash
-# Authentication & Admin (optional)
+# Authentication is disabled by default for local development.
 AUTH_ENABLED=False
+
+# Optional: only needed if you want to use the admin access-code management routes.
 ADMIN_ACCESS_CODE=your-secret-code
 ```
 

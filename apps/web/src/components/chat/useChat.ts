@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Message, ChatState, GeneratedFile, MediaReference, MediaSelectorState, TodoItem } from './types';
+import { Message, ChatState, GeneratedFile, MediaReference, TodoItem } from './types';
 import { MediaCacheService } from './utils/mediaCacheService';
 import { parseMediaReferences, addMediaReferencesToText } from './utils/mediaReferenceParser';
 import { useProjectStore } from '@/stores/project-store';
@@ -9,37 +9,12 @@ import { extractEditorActions } from '@/lib/ai/editor-actions';
 import { applyEditorAction } from '@/lib/ai/apply-editor-action';
 
 const CHAT_STORAGE_KEY_PREFIX = 'ai-chat-state-';
-const ACCESS_CODE_STORAGE_KEY = 'ai-chat-access-code';
-
-// Access code status interface
-export interface AccessCodeStatus {
-  enabled: boolean;
-  usage_count: number;
-  conversation_count: number;
-  max_conversations: number | null;
-  remaining_conversations: number | null;
-  last_used: string | null;
-  created_at: string | null;
-}
-
 export const useChat = () => {
   // Get current project ID
   const activeProject = useProjectStore((state) => state.activeProject);
   const projectId = activeProject?.id;
   // Media cache service instance
   const mediaCacheService = useRef(new MediaCacheService()).current;
-
-  // Restore access code from localStorage
-  const getStoredAccessCode = (): string => {
-    if (typeof window !== 'undefined') {
-      try {
-        return localStorage.getItem(ACCESS_CODE_STORAGE_KEY) || '';
-      } catch (error) {
-        console.warn('Failed to restore access code:', error);
-      }
-    }
-    return '';
-  };
 
   // Restore state from localStorage (based on project ID)
   const getInitialState = (currentProjectId?: string): ChatState => {
@@ -60,7 +35,6 @@ export const useChat = () => {
               selectedIndex: 0,
             },
             referencedMedia: parsed.referencedMedia || [],
-            accessCode: getStoredAccessCode(), // Restore access code
           };
         }
       } catch (error) {
@@ -83,7 +57,6 @@ export const useChat = () => {
       connectionStatus: 'disconnected',
       retryCount: 0,
       maxRetries: 3,
-      accessCode: getStoredAccessCode(),
     };
   };
 
@@ -202,11 +175,7 @@ export const useChat = () => {
         }
 
         // Establish SSE connection with full prompt containing media references
-        // Note: EventSource doesn't support custom headers, so we pass access code as URL parameter
-        let url = `/api/chat/stream?prompt=${encodeURIComponent(fullPrompt)}${state.sessionId ? `&sessionId=${state.sessionId}` : ''}`;
-        if (state.accessCode) {
-          url += `&accessCode=${encodeURIComponent(state.accessCode)}`;
-        }
+        const url = `/api/chat/stream?prompt=${encodeURIComponent(fullPrompt)}${state.sessionId ? `&sessionId=${state.sessionId}` : ''}`;
         eventSourceRef.current = new EventSource(url);
         
         // Set heartbeat timeout detection - if no message received within 90 seconds, attempt reconnection
@@ -451,12 +420,6 @@ export const useChat = () => {
             if (!testResponse.ok) {
               let errorMessage = 'Connection error';
               
-              if (testResponse.status === 401) {
-                errorMessage = '❌ Access code not provided. Please configure your access code in the project settings.';
-              } else if (testResponse.status === 403) {
-                errorMessage = '❌ Invalid access code. The access code you provided is incorrect or has been disabled. Please check your access code in the project settings.';
-              }
-              
               setState(prev => ({
                 ...prev,
                 error: errorMessage,
@@ -583,15 +546,6 @@ export const useChat = () => {
   // Handle send message
   const handleSend = async () => {
     if (state.inputText.trim() && !state.isLoading) {
-      // Check if access code is set
-      if (!state.accessCode || state.accessCode.trim() === '') {
-        setState(prev => ({
-          ...prev,
-          error: 'Please configure the access code in the project settings before sending messages.',
-        }));
-        return;
-      }
-
       const originalText = state.inputText.trim(); // Save original input for display
       let messageText = originalText; // Text to send to backend
       
@@ -662,7 +616,6 @@ export const useChat = () => {
       connectionStatus: 'disconnected' as const,
       retryCount: 0,
       maxRetries: 3,
-      accessCode: state.accessCode, // Keep access code
     };
     setState(clearedState);
     if (typeof window !== 'undefined' && projectId) {
@@ -688,57 +641,6 @@ export const useChat = () => {
     }));
   };
 
-  // Handle access code change
-  const handleAccessCodeChange = (code: string) => {
-    setState(prev => ({
-      ...prev,
-      accessCode: code,
-    }));
-    
-    // Save to localStorage
-    if (typeof window !== 'undefined') {
-      try {
-        if (code) {
-          localStorage.setItem(ACCESS_CODE_STORAGE_KEY, code);
-        } else {
-          localStorage.removeItem(ACCESS_CODE_STORAGE_KEY);
-        }
-      } catch (error) {
-        console.warn('Failed to save access code:', error);
-      }
-    }
-  };
-
-  // Get access code status - use useCallback to avoid infinite loops
-  const fetchAccessCodeStatus = useCallback(async (): Promise<AccessCodeStatus | null> => {
-    if (!state.accessCode) {
-      return null;
-    }
-
-    try {
-      const response = await fetch('/api/access-code/status', {
-        method: 'GET',
-        headers: {
-          'X-Access-Code': state.accessCode,
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 404) {
-          console.warn('Access code is invalid or not found');
-          return null;
-        }
-        throw new Error(`Failed to fetch access code status: ${response.statusText}`);
-      }
-
-      const status: AccessCodeStatus = await response.json();
-      return status;
-    } catch (error) {
-      console.error('Error fetching access code status:', error);
-      return null;
-    }
-  }, [state.accessCode]);
-
   return {
     messages: state.messages,
     inputText: state.inputText,
@@ -749,14 +651,11 @@ export const useChat = () => {
     connectionStatus: state.connectionStatus,
     retryCount: state.retryCount,
     maxRetries: state.maxRetries,
-    accessCode: state.accessCode || '',
     handleInputChange,
     handleSend,
     handleKeyDown,
     clearChat,
     handleMediaReference,
     removeMediaReference,
-    handleAccessCodeChange,
-    fetchAccessCodeStatus,
   };
 };
